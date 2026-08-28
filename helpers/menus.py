@@ -11,7 +11,7 @@ from database import (
     has_thumbnail, get_font_style, get_destination_channel,
     get_send_mode, is_admin
 )
-from fonts import get_font_name, format_caption, FONT_STYLES
+from font import get_font_name, format_caption, FONT_STYLES
 
 logger = logging.getLogger(__name__)
 
