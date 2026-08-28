@@ -17,7 +17,7 @@ from database import (
     get_font_style, get_send_mode,
     log_thumbnail_set, log_thumbnail_removed, format_log_message
 )
-from fonts import format_caption, get_font_name
+from font import format_caption, get_font_name
 from helpers.menus import (
     get_home_menu_text, get_home_menu_markup,
     get_settings_menu, get_fonts_menu, get_channel_menu
