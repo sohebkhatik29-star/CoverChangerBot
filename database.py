@@ -321,11 +321,21 @@ def delete_custom_caption(user_id: int) -> bool:
 """═══════════════════ ADMIN FUNCTIONS ═══════════════════"""
 
 
+def is_admin(user_id: int) -> bool:
+    """Check if the given user_id is the bot admin/owner"""
+    try:
+        from config import ADMIN_ID
+        return bool(ADMIN_ID) and int(user_id) == int(ADMIN_ID)
+    except Exception:
+        return False
+
+
 def ban_user(user_id: int, reason: str = "No reason") -> bool:
     """Ban a user from using the bot"""
+    _memory_cache["banned"][user_id] = True
     if not DB_AVAILABLE:
-        logger.debug(f"Database not available, skipping ban for user {user_id}")
-        return False
+        logger.debug(f"Database not available, cached ban for user {user_id}")
+        return True
     
     try:
         users_collection.update_one(
@@ -349,9 +359,10 @@ def ban_user(user_id: int, reason: str = "No reason") -> bool:
 
 def unban_user(user_id: int) -> bool:
     """Unban a user"""
+    _memory_cache["banned"].pop(user_id, None)
     if not DB_AVAILABLE:
-        logger.debug(f"Database not available, skipping unban for user {user_id}")
-        return False
+        logger.debug(f"Database not available, skipped unban for user {user_id}")
+        return True
     
     try:
         result = users_collection.update_one(
@@ -375,6 +386,8 @@ def unban_user(user_id: int) -> bool:
 
 def is_user_banned(user_id: int) -> bool:
     """Check if user is banned"""
+    if user_id in _memory_cache["banned"]:
+        return True
     if not DB_AVAILABLE:
         return False
     
@@ -423,18 +436,23 @@ def get_stats() -> dict:
         return {
             "total_users": 0,
             "banned_users": 0,
-            "users_with_thumbnail": 0
+            "active_users": 0,
+            "users_with_thumbnail": 0,
+            "total_thumbnails": 0
         }
     
     try:
         total = users_collection.count_documents({})
         banned = users_collection.count_documents({"is_banned": True})
         with_thumb = users_collection.count_documents({"photo_id": {"$exists": True}})
+        active = max(0, total - banned)
         
         stats = {
             "total_users": total,
             "banned_users": banned,
-            "users_with_thumbnail": with_thumb
+            "active_users": active,
+            "users_with_thumbnail": with_thumb,
+            "total_thumbnails": with_thumb
         }
         logger.info(f"📊 Stats: {stats}")
         return stats
@@ -443,7 +461,9 @@ def get_stats() -> dict:
         return {
             "total_users": 0,
             "banned_users": 0,
-            "users_with_thumbnail": 0
+            "active_users": 0,
+            "users_with_thumbnail": 0,
+            "total_thumbnails": 0
         }
 
 
