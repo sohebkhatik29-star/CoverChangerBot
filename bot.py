@@ -8,7 +8,11 @@ Clean, Modular Main Entrypoint
 """
 
 import logging
+import os
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler,
     CallbackQueryHandler, filters
@@ -31,6 +35,31 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+
+class HealthHandler(BaseHTTPRequestHandler):
+    """Minimal HTTP handler so Render Web Service free tier detects an open port."""
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"CoverChangerBot is running")
+
+    def log_message(self, format, *args):
+        # Silence default access logs
+        return
+
+
+def start_health_server():
+    """Bind to PORT so Render health checks pass (free Web Service)."""
+    port = int(os.environ.get("PORT", "10000"))
+    try:
+        server = HTTPServer(("0.0.0.0", port), HealthHandler)
+        logger.info(f"✅ Health server listening on port {port}")
+        server.serve_forever()
+    except Exception as e:
+        logger.warning(f"Health server failed to start: {e}")
 
 
 # Middleware wrapper for commands to enforce force-sub & ban check
@@ -92,6 +121,10 @@ def main():
 
     logger.info("🚀 Starting CoverChangerBot...")
     logger.info("📢 Channel: @SSBotsUpdates | 📺 YouTube: SunilWebTricks | 💬 Support: @Sunil_Sharma_2_0_Bot")
+
+    # Start health HTTP server in background (required for Render free Web Service)
+    health_thread = threading.Thread(target=start_health_server, daemon=True)
+    health_thread.start()
     
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
 
