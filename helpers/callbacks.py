@@ -16,7 +16,7 @@ from database import (
     delete_destination_channel, save_send_mode, get_send_mode,
     is_admin, get_total_users, get_banned_users_count
 )
-from fonts import get_font_name
+from font import get_font_name
 from helpers.menus import (
     get_home_menu_text, get_home_menu_markup,
     get_settings_menu, get_fonts_menu, get_channel_menu
